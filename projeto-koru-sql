@@ -1,0 +1,182 @@
+-- Tabela de clientes
+CREATE TABLE livrariadevsaber_1_7.Lara_clientes (
+  id_cliente INT64,
+  nome_cliente STRING NOT NULL,
+  email_cliente STRING NOT NULL,
+  estado_cliente STRING(2) NOT NULL
+);
+
+-- Tabela de produtos
+CREATE TABLE livrariadevsaber_1_7.Lara_produtos (
+  id_produto INT64,
+  nome_produto STRING NOT NULL,
+  categoria_produto STRING NOT NULL,
+  preco_produto NUMERIC NOT NULL
+);
+
+-- Tabela de vendas
+CREATE TABLE livrariadevsaber_1_7.Lara_vendas (
+  id_venda INT64,
+  id_cliente INT64 NOT NULL,
+  id_produto INT64 NOT NULL,
+  data_venda DATE NOT NULL,
+  quantidade INT64 NOT NULL
+);
+
+-- INSERIR DADOS
+
+-- Clientes
+INSERT INTO livrariadevsaber_1_7.Lara_clientes 
+(id_cliente, nome_cliente, email_cliente, estado_cliente) VALUES
+(1, "Ana Silva", "ana.s@email.com", "SP"),
+(2, "Bruno Costa", "b.costa@email.com", "RJ"),
+(3, "Carla Dias", "carla.d@email.com", "SP"),
+(4, "Daniel Souza", "daniel.s@email.com", "MG");
+
+SELECT * FROM livrariadevsaber_1_7.Lara_clientes;
+
+-- Produtos
+INSERT INTO livrariadevsaber_1_7.Lara_produtos (id_produto, nome_produto, categoria_produto, preco_produto) VALUES
+(1, "Fundamentos de SQL", "Dados", 60.00),
+(2, "Duna", "Ficção Científica", 80.50),
+(3, "Python para Dados", "Programação", 75.00),
+(4, "O Guia do Mochileiro", "Ficção Científica", 42.00);
+
+
+SELECT * FROM livrariadevsaber_1_7.Lara_produtos;
+
+-- Vendas
+INSERT INTO livrariadevsaber_1_7.Lara_vendas (id_venda, id_cliente, id_produto, data_venda, quantidade) VALUES
+(1, 1, 1, "2024-01-15", 1),
+(2, 2, 2, "2024-01-18", 1),
+(3, 3, 3, "2024-02-02", 2),
+(4, 1, 2, "2024-02-10", 1),
+(5, 4, 1, "2024-02-20", 1),
+(6, 2, 4, "2024-03-05", 1);
+
+SELECT * FROM livrariadevsaber_1_7.Lara_vendas;
+
+
+-- Lista total com clientes e produtos
+SELECT 
+  v.id_venda,
+  c.nome_cliente,
+  c.estado_cliente,
+  p.nome_produto,
+  v.quantidade,
+  v.data_venda,
+  (v.quantidade * p.preco_produto) AS valor_total
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_clientes c 
+  ON v.id_cliente = c.id_cliente
+JOIN livrariadevsaber_1_7.Lara_produtos p 
+  ON v.id_produto = p.id_produto
+ORDER BY v.data_venda;
+
+
+-- Faturamento por cliente
+SELECT 
+  c.nome_cliente,
+  SUM(v.quantidade * p.preco_produto) AS total_gasto
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_clientes c 
+  ON v.id_cliente = c.id_cliente
+JOIN livrariadevsaber_1_7.Lara_produtos p 
+  ON v.id_produto = p.id_produto
+GROUP BY c.nome_cliente
+ORDER BY total_gasto DESC;
+
+
+-- Produto mais vendido
+SELECT 
+  p.nome_produto,
+  SUM(v.quantidade) AS total_vendido
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_produtos p 
+  ON v.id_produto = p.id_produto
+GROUP BY p.nome_produto
+ORDER BY total_vendido DESC;
+
+-- Faturamento por Estado
+
+SELECT 
+  c.estado_cliente,
+  SUM(v.quantidade * p.preco_produto) AS receita_estado
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_clientes c 
+  ON v.id_cliente = c.id_cliente
+JOIN livrariadevsaber_1_7.Lara_produtos p 
+  ON v.id_produto = p.id_produto
+GROUP BY c.estado_cliente
+ORDER BY receita_estado DESC;
+
+
+-- view que une vendas, clientes e produtos
+CREATE OR REPLACE VIEW livrariadevsaber_1_7.Lara_View_VendasDetalhadas AS
+SELECT
+    v.id_venda,
+    v.data_venda,
+    c.nome_cliente,
+    c.estado_cliente,
+    p.nome_produto,
+    p.categoria_produto,
+    v.quantidade,
+    p.preco_produto,
+    (v.quantidade * p.preco_produto) AS valor_total
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_clientes c ON v.id_cliente = c.id_cliente
+JOIN livrariadevsaber_1_7.Lara_produtos p ON v.id_produto = p.id_produto;
+
+
+SELECT * FROM livrariadevsaber_1_7.Lara_View_VendasDetalhadas;
+
+
+-- VIEW que mostra o valor total gasto por cada cliente
+CREATE OR REPLACE VIEW `livrariadevsaber_1_7.Lara_View_gasto_por_cliente` AS
+SELECT
+  c.id_cliente,
+  c.nome_cliente,
+  c.email_cliente,
+  c.estado_cliente,
+  SUM(v.quantidade * p.preco_produto) AS total_gasto
+FROM `livrariadevsaber_1_7.Lara_vendas`   AS v
+JOIN `livrariadevsaber_1_7.Lara_clientes` AS c ON c.id_cliente = v.id_cliente
+JOIN `livrariadevsaber_1_7.Lara_produtos` AS p ON p.id_produto = v.id_produto
+GROUP BY
+  c.id_cliente, c.nome_cliente, c.email_cliente, c.estado_cliente
+ORDER BY total_gasto DESC;
+
+
+SELECT * FROM livrariadevsaber_1_7.Lara_View_gasto_por_cliente;
+
+-- VIEW que mostra o produto mais vendido
+
+CREATE OR REPLACE VIEW `livrariadevsaber_1_7.Lara_View_produto_mais_vendido` AS
+SELECT
+  p.nome_produto,
+  SUM(v.quantidade) AS total_vendido
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_produtos p 
+  ON v.id_produto = p.id_produto
+GROUP BY p.nome_produto
+ORDER BY total_vendido DESC;
+
+
+SELECT * FROM livrariadevsaber_1_7.Lara_View_produto_mais_vendido;
+
+
+
+-- VIEW que mostra o Faturamento por Estado
+CREATE OR REPLACE VIEW `livrariadevsaber_1_7.Lara_View_faturamento_por_estado` AS
+SELECT 
+  c.estado_cliente,
+  SUM(v.quantidade * p.preco_produto) AS receita_estado
+FROM livrariadevsaber_1_7.Lara_vendas v
+JOIN livrariadevsaber_1_7.Lara_clientes c 
+  ON v.id_cliente = c.id_cliente
+JOIN livrariadevsaber_1_7.Lara_produtos p 
+  ON v.id_produto = p.id_produto
+GROUP BY c.estado_cliente
+ORDER BY receita_estado DESC;
+
+SELECT * FROM livrariadevsaber_1_7.Lara_View_faturamento_por_estado;
